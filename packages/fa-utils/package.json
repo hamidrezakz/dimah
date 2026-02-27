@@ -22,8 +22,6 @@
   },
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -34,10 +32,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsup --config tsup.config.ts",
     "check-types": "tsc --noEmit"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tsup": "^8.5.1"
+  },
   "publishConfig": {
     "access": "public"
   }
