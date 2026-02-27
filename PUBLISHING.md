@@ -1,166 +1,135 @@
-# راهنمای انتشار پکیج‌ها روی npm
+# Publishing Guide
 
-این راهنمای گام‌به‌گام برای انتشار پکیج‌های این monorepo روی npmjs.com است.
+This guide explains how to publish packages from this monorepo to npm in a reliable, repeatable way.
 
-## یکبار اولیه: تنظیمات npm
+## Package scope and access
 
-### ۱. ساخت حساب کاربری npm
+- Scope: `@dimah`
+- Package example: `@dimah/fa-utils`
+- Access: `public` (configured in each package via `publishConfig.access`)
 
-- برو به https://www.npmjs.com/signup
-- یک حساب کاربری رایگان بساز
-- ایمیلت را verify کن
+## One-time setup
 
-### ۲. دریافت Access Token از npm
+### 1) Create npm account
 
-1. برو به https://www.npmjs.com/settings/[username]/tokens
-2. روی **Generate New Token** کلیک کن
-3. نوع **Automation** را انتخاب کن (برای CI/CD)
-4. توکن را کپی کن و در جای امنی نگهدار
+- Sign up at <https://www.npmjs.com/signup>
+- Verify your email
 
-### ۳. اضافه کردن توکن به GitHub Secrets
+### 2) Create npm token
 
-1. برو به: https://github.com/hamidrezakz/hrk/settings/secrets/actions
-2. روی **New repository secret** کلیک کن
-3. نام: `NPM_TOKEN`
-4. مقدار: توکنی که از npm گرفتی را paste کن
-5. **Add secret** را بزن
+1. Go to npm access tokens settings.
+2. Generate a new **Automation** token.
+3. Store it securely.
 
-### ۴. لاگین محلی (برای publish دستی)
+### 3) Add token to GitHub Secrets
+
+In this repository settings:
+
+- Name: `NPM_TOKEN`
+- Value: your npm automation token
+
+### 4) Local auth (for manual publish)
 
 ```bash
 npm login
+npm whoami
 ```
 
-اطلاعات حساب npm را وارد کن. ✅ الان آماده‌ای!
+## Standard release model (recommended)
 
----
+This repository uses Changesets + SemVer:
 
-## انتشار پکیج جدید
+- `patch`: backward-compatible fixes
+- `minor`: backward-compatible features
+- `major`: breaking changes
 
-### روش ۱: انتشار خودکار با GitHub Actions (توصیه می‌شود)
+### Contributor workflow
 
-**گام ۱:** نسخه را افزایش بده
+1. Make package changes.
+2. Run quality checks:
 
 ```bash
-# برای تغییرات ریز (0.1.0 → 0.1.1)
-pnpm --filter @hrk/fa-utils version patch
-
-# برای ویژگی جدید (0.1.0 → 0.2.0)
-pnpm --filter @hrk/fa-utils version minor
-
-# برای تغییرات بزرگ (0.1.0 → 1.0.0)
-pnpm --filter @hrk/fa-utils version major
+pnpm build
+pnpm check-types
 ```
 
-**گام ۲:** تغییرات را commit و push کن
+3. Create a changeset:
 
 ```bash
-git add .
-git commit -m "chore: bump @hrk/fa-utils to v0.1.1"
-git push origin master
+pnpm changeset
 ```
 
-**گام ۳:** GitHub Action خودکار اجرا می‌شود
+4. Commit code + changeset file.
+5. Open PR.
 
-- می‌رود به: https://github.com/hamidrezakz/hrk/actions
-- workflow ای با نام **Publish @hrk/fa-utils** اجرا می‌شود
-- پکیج را build و روی npm منتشر می‌کند
-- اگر نسخه قبلاً publish شده باشد، skip می‌کند
+### Maintainer workflow (after merge)
 
----
-
-### روش ۲: انتشار دستی (برای تست)
+1. Apply version/changelog updates:
 
 ```bash
-# مطمئن شو که لاگین کردی
+pnpm version-packages
+```
+
+2. Commit generated updates.
+3. Push to `master`.
+4. Existing GitHub Action publishes new version(s) if not already published.
+
+## Manual publish flow (fallback)
+
+Use this only when you intentionally want manual control.
+
+```bash
+# verify auth
 npm whoami
 
-# build کن
-pnpm --filter @hrk/fa-utils build
+# build package
+pnpm --filter @dimah/fa-utils build
 
-# publish کن
-pnpm --filter @hrk/fa-utils publish --access public
+# publish package
+pnpm --filter @dimah/fa-utils publish --access public
 ```
 
----
+## Verify published package
 
-## بررسی پکیج منتشر شده
-
-بعد از publish موفق:
-
-- صفحه پکیج: https://www.npmjs.com/package/@hrk/fa-utils
-- نصب: `pnpm add @hrk/fa-utils` یا `npm install @hrk/fa-utils`
-
----
-
-## افزودن پکیج جدید
-
-برای هر پکیج جدید در `packages/`:
-
-**۱. مطمئن شو `package.json` این تنظیمات را دارد:**
-
-```json
-{
-  "name": "@hrk/package-name",
-  "version": "0.1.0",
-  "publishConfig": {
-    "access": "public"
-  }
-}
-```
-
-**۲. یک GitHub workflow جدید بساز:**
-کپی کن از `.github/workflows/publish-fa-utils.yml` و اسم پکیج را عوض کن.
-
-**۳. اولین انتشار:**
+- npm page: <https://www.npmjs.com/package/@dimah/fa-utils>
+- install:
 
 ```bash
-pnpm --filter @hrk/package-name build
-pnpm --filter @hrk/package-name publish --access public
+pnpm add @dimah/fa-utils
+# or
+npm install @dimah/fa-utils
 ```
 
----
-
-## نکات مهم
-
-✅ **همیشه قبل از push، build کن و تست کن**
+## Pre-publish checklist
 
 ```bash
-pnpm --filter @hrk/fa-utils build
-pnpm --filter @hrk/fa-utils check-types
+pnpm --filter @dimah/fa-utils build
+pnpm --filter @dimah/fa-utils check-types
+pnpm --filter @dimah/fa-utils pack --dry-run
 ```
 
-✅ **هیچ‌وقت نسخه تکراری publish نکن**
-npm اجازه نمی‌دهد همان نسخه دوباره publish شود. همیشه `version` را بالا ببر.
+Confirm:
 
-✅ **برای انتشار چند پکیج هم‌زمان**
-در آینده می‌توانی از [Changesets](https://github.com/changesets/changesets) استفاده کنی.
+- version is bumped
+- package metadata is correct
+- published files are expected
 
-✅ **بررسی قبل از publish**
+## Troubleshooting
 
-```bash
-# ببین چه فایل‌هایی publish می‌شوند
-pnpm --filter @hrk/fa-utils pack --dry-run
-```
+### 403 Forbidden
 
----
+- Verify `NPM_TOKEN` is present and valid.
+- Confirm you can publish under scope `@dimah`.
 
-## عیب‌یابی
+### 402 Payment Required
 
-### خطا: 403 Forbidden
+- Make sure package access is public (`publishConfig.access: "public"`).
 
-- توکن npm را چک کن (ممکن است expire شده باشد)
-- مطمئن شو scope `@hrk` مال توست یا public است
+### Version already exists
 
-### خطا: 402 Payment Required (Private packages)
+- Bump version (prefer via Changesets + `pnpm version-packages`).
 
-- `publishConfig.access` را روی `"public"` بگذار
+### GitHub Action fails
 
-### خطا: Version already exists
-
-- نسخه را با `pnpm version patch` افزایش بده
-
-### GitHub Action fail می‌شود
-
-- چک کن که `NPM_TOKEN` در Secrets وجود دارد
-- لاگ‌های action را در GitHub Actions بررسی کن
+- Check Actions logs.
+- Verify token permissions and secret name.

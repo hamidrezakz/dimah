@@ -1,4 +1,4 @@
-# HRK Monorepo
+# Dimah Monorepo
 
 > A collection of open-source TypeScript packages for modern web development
 
@@ -6,12 +6,12 @@ This is a monorepo containing multiple npm packages maintained by [@hamidrezakz]
 
 ## 📦 Packages
 
-### [@hrk/fa-utils](./packages/fa-utils)
+### [@dimah/fa-utils](./packages/fa-utils)
 
 Simple Persian (Farsi) date and number formatting helpers using built-in JavaScript Intl APIs.
 
 ```bash
-pnpm add @hrk/fa-utils
+pnpm add @dimah/fa-utils
 ```
 
 ## 🛠 Development
@@ -37,12 +37,19 @@ pnpm build
 ### Build specific package
 
 ```bash
-pnpm --filter @hrk/fa-utils build
+pnpm --filter @dimah/fa-utils build
 ```
 
 ## 📖 Publishing
 
 See [PUBLISHING.md](./PUBLISHING.md) for detailed instructions on publishing packages to npm.
+
+## 🤝 Open-source process
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)
+- [RELEASING.md](./RELEASING.md)
 
 ## 📄 License
 
