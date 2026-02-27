@@ -23,6 +23,18 @@ export function formatFaNumber(value: number): string {
   return new Intl.NumberFormat("fa-IR").format(value);
 }
 
+export function formatFaCurrency(
+  value: number,
+  currency: string = "IRR",
+  options?: Omit<Intl.NumberFormatOptions, "style" | "currency">,
+): string {
+  return new Intl.NumberFormat("fa-IR", {
+    style: "currency",
+    currency,
+    ...options,
+  }).format(value);
+}
+
 export function formatFaDate(
   value: Date | string | number,
   options?: Intl.DateTimeFormatOptions,

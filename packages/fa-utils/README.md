@@ -11,7 +11,12 @@ pnpm add @dimah/fa-utils
 ## Usage
 
 ```ts
-import { formatFaDate, formatFaNumber, toPersianDigits } from "@dimah/fa-utils";
+import {
+  formatFaCurrency,
+  formatFaDate,
+  formatFaNumber,
+  toPersianDigits,
+} from "@dimah/fa-utils";
 
 formatFaDate(new Date());
 // e.g. ۱۴۰۴/۱۲/۸
@@ -26,6 +31,12 @@ formatFaDate("2026-02-27", {
 
 formatFaNumber(1234567);
 // ۱٬۲۳۴٬۵۶۷
+
+formatFaCurrency(1250000);
+// ‎ریال ۱٬۲۵۰٬۰۰۰
+
+formatFaCurrency(49.99, "USD");
+// ‎$۴۹٫۹۹
 
 toPersianDigits("Order #2026");
 // Order #۲۰۲۶
