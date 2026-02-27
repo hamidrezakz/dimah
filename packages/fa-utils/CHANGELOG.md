@@ -1,5 +1,11 @@
 # @dimah/fa-utils
 
+## 0.3.0
+
+### Minor Changes
+
+- Add `formatIranPhone` to convert Iran mobile numbers between DB format (`+989...`) and UI format (`09...`) with Persian digits by default and optional English UI digits.
+
 ## 0.2.0
 
 ### Minor Changes
