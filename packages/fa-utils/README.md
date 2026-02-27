@@ -15,6 +15,7 @@ import {
   formatFaCurrency,
   formatFaDate,
   formatFaNumber,
+  formatIranPhone,
   toPersianDigits,
 } from "@dimah/fa-utils";
 
@@ -40,4 +41,13 @@ formatFaCurrency(49.99, "USD");
 
 toPersianDigits("Order #2026");
 // Order #۲۰۲۶
+
+formatIranPhone("+989305138169");
+// ۰۹۳۰۵۱۳۸۱۶۹
+
+formatIranPhone("+989305138169", { uiDigits: "en" });
+// 09305138169
+
+formatIranPhone("09305138169", { target: "db" });
+// +989305138169
 ```
