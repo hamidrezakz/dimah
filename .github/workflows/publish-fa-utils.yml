@@ -1,0 +1,71 @@
+name: Publish @dimah/fa-utils
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "packages/fa-utils/**"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build + publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          scope: "@dimah"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build fa-utils
+        run: pnpm --filter @dimah/fa-utils build
+
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+          echo "@dimah:registry=https://registry.npmjs.org" >> ~/.npmrc
+
+      - name: Validate npm token
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is missing in GitHub Secrets."
+            exit 1
+          fi
+          npm whoami
+
+      - name: Check if version already exists
+        id: check
+        run: |
+          VERSION=$(node -p "require('./packages/fa-utils/package.json').version")
+          if npm view @dimah/fa-utils@$VERSION version > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.check.outputs.exists == 'false'
+        run: pnpm --filter @dimah/fa-utils publish --access public --no-git-checks
+
+      - name: Skip duplicate version
+        if: steps.check.outputs.exists == 'true'
+        run: echo "Version already published. Bump version to publish again."
