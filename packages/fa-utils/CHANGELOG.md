@@ -1,5 +1,11 @@
 # @dimah/fa-utils
 
+## 0.3.2
+
+### Patch Changes
+
+- 1198286: update build setup
+
 ## 0.3.1
 
 ### Patch Changes
