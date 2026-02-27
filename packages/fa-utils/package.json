@@ -1,6 +1,6 @@
 {
   "name": "@dimah/fa-utils",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Simple Persian date and number formatting helpers using built-in Intl APIs",
   "keywords": [
     "persian",

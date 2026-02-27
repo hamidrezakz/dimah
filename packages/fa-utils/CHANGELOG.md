@@ -1,5 +1,11 @@
 # @dimah/fa-utils
 
+## 0.3.1
+
+### Patch Changes
+
+- 8b529f0: a test update
+
 ## 0.3.0
 
 ### Minor Changes
