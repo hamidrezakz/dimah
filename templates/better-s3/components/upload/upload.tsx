@@ -1,11 +1,26 @@
 "use client"
 
-import { useRef, type ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
+import { UploadIcon } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { formatFileSize } from "@/lib/s3/types"
+import type { UploadPhase, UploadProgress } from "@/lib/s3/types"
+import { Button } from "@/components/ui/button"
+import {
+  Progress,
+  ProgressLabel,
+  ProgressValue,
+} from "@/components/ui/progress"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useUploadContext } from "@/components/upload/upload-context"
 import { UploadProvider } from "@/components/upload/upload-context"
 import type { UseUploadOptions } from "@/hooks/use-upload"
-import type { UploadPhase, UploadProgress } from "@/lib/s3/types"
 
 export type UploadVariantType = "button" | "dropzone" | "custom"
 
@@ -16,6 +31,7 @@ type UploadProps = UseUploadOptions & {
   className?: string
   label?: string
   disabled?: boolean
+  tooltipText?: string
 }
 
 export function Upload(props: UploadProps) {
@@ -26,6 +42,7 @@ export function Upload(props: UploadProps) {
     className,
     label,
     disabled,
+    tooltipText,
     ...options
   } = props
   return (
@@ -36,6 +53,7 @@ export function Upload(props: UploadProps) {
         className={className}
         label={label}
         disabled={disabled}
+        tooltipText={tooltipText}
       >
         {children}
       </UploadInner>
@@ -50,6 +68,7 @@ function UploadInner({
   className,
   label,
   disabled,
+  tooltipText = "Upload file",
 }: {
   variant: UploadVariantType
   objectKey: string | ((file: File) => string)
@@ -57,9 +76,14 @@ function UploadInner({
   className?: string
   label?: string
   disabled?: boolean
+  tooltipText?: string
 }) {
   const ctx = useUploadContext()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [fileInfo, setFileInfo] = useState<{
+    name: string
+    size: number
+  } | null>(null)
 
   const isDisabled = disabled || ctx.phase === "uploading"
 
@@ -69,8 +93,37 @@ function UploadInner({
   const handleFiles = async (files: FileList | null) => {
     const file = files?.[0]
     if (!file) return
+    setFileInfo({ name: file.name, size: file.size })
     const key = resolveKey(file)
+
+    const toastId = `upload-${file.name}`
+    toast.loading("Uploading…", {
+      id: toastId,
+      description: `${file.name} · ${formatFileSize(file.size)}`,
+    })
+
     await ctx.upload(file, key)
+
+    if (ctx.phase === "error") {
+      toast.error("Upload failed", {
+        id: toastId,
+        description: ctx.error ?? file.name,
+      })
+    }
+  }
+
+  // Show toast on phase transitions via effect-free check
+  const prevPhaseRef = useRef(ctx.phase)
+  if (prevPhaseRef.current !== ctx.phase) {
+    prevPhaseRef.current = ctx.phase
+    if (ctx.phase === "success" && fileInfo) {
+      toast.success("Upload complete", {
+        description: `${fileInfo.name} · ${formatFileSize(fileInfo.size)}`,
+      })
+    }
+    if (ctx.phase === "error" && fileInfo) {
+      toast.error("Upload failed", { description: ctx.error ?? fileInfo.name })
+    }
   }
 
   const openFilePicker = () => inputRef.current?.click()
@@ -91,19 +144,31 @@ function UploadInner({
   if (variant === "button") {
     return (
       <div className={cn("inline-flex flex-col gap-2", className)}>
-        {fileInput}
-        <button
-          type="button"
-          disabled={isDisabled}
-          onClick={openFilePicker}
-          className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:pointer-events-none disabled:opacity-50"
-        >
-          {label ?? "Upload file"}
-        </button>
+        <div className="inline-flex items-center gap-2">
+          {fileInput}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="default"
+                    disabled={isDisabled}
+                    onClick={openFilePicker}
+                  />
+                }
+              >
+                <UploadIcon data-icon="inline-start" />
+                {label ?? "Upload file"}
+              </TooltipTrigger>
+              <TooltipContent>{tooltipText}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <UploadStatus
           phase={ctx.phase}
           progress={ctx.progress}
           error={ctx.error}
+          fileInfo={fileInfo}
         />
       </div>
     )
@@ -113,7 +178,7 @@ function UploadInner({
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+          "flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
           isDisabled
             ? "cursor-not-allowed opacity-50"
             : "cursor-pointer border-muted-foreground/25 hover:border-primary/50",
@@ -131,6 +196,7 @@ function UploadInner({
         }}
       >
         {fileInput}
+        <UploadIcon className="size-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           {label ?? "Click or drag & drop to upload"}
         </p>
@@ -138,6 +204,7 @@ function UploadInner({
           phase={ctx.phase}
           progress={ctx.progress}
           error={ctx.error}
+          fileInfo={fileInfo}
         />
       </div>
     )
@@ -164,6 +231,7 @@ function UploadInner({
         phase={ctx.phase}
         progress={ctx.progress}
         error={ctx.error}
+        fileInfo={fileInfo}
       />
     </div>
   )
@@ -173,31 +241,41 @@ function UploadStatus({
   phase,
   progress,
   error,
+  fileInfo,
 }: {
   phase: UploadPhase
   progress: UploadProgress
   error: string | null
+  fileInfo: { name: string; size: number } | null
 }) {
   if (phase === "idle") return null
 
   if (phase === "uploading") {
     return (
-      <div className="flex w-full flex-col gap-1">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${progress.percent}%` }}
-          />
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {progress.percent}%
-        </span>
+      <div className="w-full">
+        <Progress value={progress.percent}>
+          <ProgressLabel>
+            {fileInfo?.name ?? "Uploading…"}
+            {fileInfo?.size != null && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {formatFileSize(fileInfo.size)}
+              </span>
+            )}
+          </ProgressLabel>
+          <ProgressValue />
+        </Progress>
       </div>
     )
   }
 
   if (phase === "success") {
-    return <span className="text-xs text-green-600">Upload complete</span>
+    return (
+      <span className="text-xs text-green-600">
+        Upload complete
+        {fileInfo && ` — ${fileInfo.name}`}
+      </span>
+    )
   }
 
   if (phase === "error") {

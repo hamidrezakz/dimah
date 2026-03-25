@@ -1,8 +1,6 @@
-export type UploadPayload = {
-  fileName: string
-  contentType?: string
-  fileSize?: number
-}
+// ---------------------------------------------------------------------------
+// Shared
+// ---------------------------------------------------------------------------
 
 export type PresignResponse = {
   key: string
@@ -24,6 +22,10 @@ export type MultipartPartResponse = {
   bucket: string
   expiresIn: number
 }
+
+// ---------------------------------------------------------------------------
+// Upload
+// ---------------------------------------------------------------------------
 
 export type UploadResult = {
   key: string
@@ -60,4 +62,61 @@ export type UploadConfig = {
   accept?: string[]
   maxFileSize?: number
   multipartThreshold?: number
+}
+
+// ---------------------------------------------------------------------------
+// Download
+// ---------------------------------------------------------------------------
+
+export type DownloadPhase =
+  | "idle"
+  | "presigning"
+  | "downloading"
+  | "success"
+  | "error"
+
+export type DownloadProgress = {
+  loaded: number
+  total: number
+  percent: number
+}
+
+export type DownloadHooks = {
+  beforeDownload?: (key: string) => Promise<boolean> | boolean
+  onDownloadStart?: (key: string) => void
+  onProgress?: (key: string, progress: DownloadProgress) => void
+  onSuccess?: (key: string) => void
+  onError?: (key: string, error: unknown, phase: DownloadPhase) => void
+  afterDownload?: (key: string) => Promise<void> | void
+}
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+export type DeletePhase =
+  | "idle"
+  | "confirming"
+  | "deleting"
+  | "success"
+  | "error"
+
+export type DeleteHooks = {
+  beforeDelete?: (key: string) => Promise<boolean> | boolean
+  onDeleteStart?: (key: string) => void
+  onSuccess?: (key: string) => void
+  onError?: (key: string, error: unknown, phase: DeletePhase) => void
+  afterDelete?: (key: string) => Promise<void> | void
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B"
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  const size = bytes / Math.pow(1024, i)
+  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
