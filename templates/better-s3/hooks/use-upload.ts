@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import type {
   UploadConfig,
   UploadHooks,
@@ -8,8 +8,7 @@ import type {
   UploadProgress,
   UploadResult,
 } from "@/lib/s3/types"
-
-import { createUploader } from "@/lib/s3/create-uploader"
+import { uploadFile } from "@/lib/s3/upload-engine"
 import { validateFile } from "@/lib/s3/validate"
 
 export type UseUploadOptions = UploadConfig & UploadHooks
@@ -19,6 +18,8 @@ export type UseUploadState = {
   progress: UploadProgress
   error: string | null
   result: UploadResult | null
+  fileName: string | null
+  fileSize: number | null
 }
 
 export type UseUploadReturn = UseUploadState & {
@@ -34,134 +35,103 @@ const INITIAL_STATE: UseUploadState = {
   progress: INITIAL_PROGRESS,
   error: null,
   result: null,
+  fileName: null,
+  fileSize: null,
 }
 
 export function useUpload(options: UseUploadOptions = {}): UseUploadReturn {
   const [state, setState] = useState<UseUploadState>(INITIAL_STATE)
   const optionsRef = useRef(options)
   optionsRef.current = options
+  const abortRef = useRef<AbortController | null>(null)
 
-  const uppy = useMemo(
-    () => createUploader(options),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [options.multipart, options.accept?.join(","), options.maxFileSize]
-  )
+  const upload = useCallback(async (file: File, objectKey: string) => {
+    setState({
+      ...INITIAL_STATE,
+      phase: "validating",
+      fileName: file.name,
+      fileSize: file.size,
+    })
+    const opts = optionsRef.current
 
-  useEffect(() => {
-    const onProgress = (
-      _file: unknown,
-      progress: { bytesUploaded: number; bytesTotal: number | null }
-    ) => {
-      const total = progress.bytesTotal ?? 0
-      const p: UploadProgress = {
-        loaded: progress.bytesUploaded,
-        total,
-        percent:
-          total > 0 ? Math.round((progress.bytesUploaded / total) * 100) : 0,
-      }
-      setState((s) => ({ ...s, phase: "uploading", progress: p }))
+    // Validate
+    const validationError = validateFile(file, {
+      accept: opts.accept,
+      maxFileSize: opts.maxFileSize,
+    })
+    if (validationError) {
+      setState((s) => ({ ...s, phase: "error", error: validationError }))
+      opts.onError?.(file, new Error(validationError), "validating")
+      return
     }
 
-    const onComplete = () => {
-      const files = uppy.getFiles()
-      const first = files[0]
-      if (first) {
-        const result: UploadResult = {
-          key: (first.meta["objectKey"] as string) ?? "",
-          url: first.uploadURL ?? undefined,
-        }
-        setState((s) => ({ ...s, phase: "success", result }))
-        optionsRef.current.onSuccess?.(first.data as File, result)
-        optionsRef.current.afterUpload?.(first.data as File, result)
-      }
-    }
-
-    const onError = (error: { name: string; message: string }) => {
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error: error.message,
-      }))
-      optionsRef.current.onError?.(null, error, "uploading")
-    }
-
-    uppy.on(
-      "upload-progress",
-      onProgress as Parameters<typeof uppy.on<"upload-progress">>[1]
-    )
-    uppy.on("complete", onComplete)
-    uppy.on("error", onError as Parameters<typeof uppy.on<"error">>[1])
-
-    return () => {
-      uppy.off(
-        "upload-progress",
-        onProgress as Parameters<typeof uppy.off<"upload-progress">>[1]
-      )
-      uppy.off("complete", onComplete)
-      uppy.off("error", onError as Parameters<typeof uppy.off<"error">>[1])
-      uppy.clear()
-    }
-  }, [uppy])
-
-  const upload = useCallback(
-    async (file: File, objectKey: string) => {
-      setState({ ...INITIAL_STATE, phase: "validating" })
-      const opts = optionsRef.current
-
-      const validationError = validateFile(file, {
-        accept: opts.accept,
-        maxFileSize: opts.maxFileSize,
-      })
-      if (validationError) {
-        setState((s) => ({ ...s, phase: "error", error: validationError }))
-        opts.onError?.(file, new Error(validationError), "validating")
+    // beforeUpload guard
+    if (opts.beforeUpload) {
+      const allowed = await opts.beforeUpload(file)
+      if (!allowed) {
+        setState((s) => ({
+          ...s,
+          phase: "error",
+          error: "Upload blocked by beforeUpload hook",
+        }))
+        opts.onError?.(file, new Error("blocked"), "validating")
         return
       }
+    }
 
-      if (opts.beforeUpload) {
-        const allowed = await opts.beforeUpload(file)
-        if (!allowed) {
-          setState((s) => ({
-            ...s,
-            phase: "error",
-            error: "Upload blocked by beforeUpload hook",
-          }))
-          opts.onError?.(file, new Error("blocked"), "validating")
-          return
-        }
+    setState((s) => ({ ...s, phase: "uploading" }))
+    opts.onUploadStart?.(file, objectKey)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    try {
+      const result = await uploadFile(
+        file,
+        objectKey,
+        {
+          multipart: opts.multipart,
+          multipartThreshold: opts.multipartThreshold,
+        },
+        {
+          onProgress: (progress) => {
+            setState((s) => ({ ...s, progress }))
+            opts.onProgress?.(file, progress)
+          },
+        },
+        controller.signal
+      )
+
+      setState((s) => ({
+        ...s,
+        phase: "success",
+        result,
+        progress: { loaded: file.size, total: file.size, percent: 100 },
+      }))
+      opts.onSuccess?.(file, result)
+      await opts.afterUpload?.(file, result)
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        setState(INITIAL_STATE)
+        return
       }
-
-      uppy.clear()
-      uppy.addFile({
-        name: file.name,
-        type: file.type,
-        data: file,
-        meta: { objectKey },
-      })
-
-      setState((s) => ({ ...s, phase: "uploading" }))
-      opts.onUploadStart?.(file, objectKey)
-
-      try {
-        await uppy.upload()
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Upload failed"
-        setState((s) => ({ ...s, phase: "error", error: message }))
-        opts.onError?.(file, err, "uploading")
-      }
-    },
-    [uppy]
-  )
+      const message = err instanceof Error ? err.message : "Upload failed"
+      setState((s) => ({ ...s, phase: "error", error: message }))
+      opts.onError?.(file, err, "uploading")
+    } finally {
+      abortRef.current = null
+    }
+  }, [])
 
   const cancel = useCallback(() => {
-    uppy.cancelAll()
+    abortRef.current?.abort()
     setState(INITIAL_STATE)
-  }, [uppy])
+  }, [])
 
   const reset = useCallback(() => {
-    uppy.clear()
+    abortRef.current?.abort()
     setState(INITIAL_STATE)
-  }, [uppy])
+  }, [])
 
   return { ...state, upload, cancel, reset }
 }
