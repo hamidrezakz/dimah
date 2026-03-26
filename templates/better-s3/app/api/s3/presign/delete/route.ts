@@ -3,10 +3,11 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
 import { s3 } from "@/lib/s3/s3-client"
-import { parseExpiresIn } from "@/lib/s3/utils"
+import { normalizeExpiresIn, withS3ErrorHandler } from "@/lib/s3/api-helpers"
 
-export async function DELETE(request: NextRequest) {
-  const key = request.nextUrl.searchParams.get("key")
+export const DELETE = withS3ErrorHandler(async (request: NextRequest) => {
+  const { searchParams } = request.nextUrl
+  const key = searchParams.get("key")?.trim()
   if (!key) {
     return NextResponse.json(
       { message: "key query parameter is required" },
@@ -14,13 +15,14 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
-  const bucket =
-    request.nextUrl.searchParams.get("bucket")?.trim() || DEFAULT_BUCKET_NAME
-  const expiresIn = parseExpiresIn(
-    request.nextUrl.searchParams.get("expiresIn")
-  )
-  const command = new DeleteObjectCommand({ Bucket: bucket, Key: key })
-  const signedUrl = await getSignedUrl(s3, command, { expiresIn })
+  const bucket = searchParams.get("bucket")?.trim() || DEFAULT_BUCKET_NAME
+  const expiresIn = normalizeExpiresIn(searchParams.get("expiresIn"))
 
-  return NextResponse.json({ bucket, key, url: signedUrl, expiresIn })
-}
+  const url = await getSignedUrl(
+    s3,
+    new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+    { expiresIn }
+  )
+
+  return NextResponse.json({ bucket, key, url, expiresIn })
+})

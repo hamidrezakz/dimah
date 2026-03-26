@@ -1,6 +1,6 @@
 "use client"
 
-import { DownloadIcon } from "lucide-react"
+import { DownloadIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatFileSize } from "@/lib/s3/types"
@@ -42,6 +42,7 @@ export function DownloadButton({
   onProgress,
   onSuccess,
   onError,
+  onCancel,
   afterDownload,
 }: DownloadButtonProps) {
   const displayName = fileName ?? objectKey.split("/").pop() ?? objectKey
@@ -49,17 +50,32 @@ export function DownloadButton({
   const dl = useDownload({
     beforeDownload,
     onDownloadStart,
-    onProgress,
+    onProgress: (key, progress) => {
+      toast.loading(`Downloading… (${progress.percent}%)`, {
+        id: `dl-${objectKey}`,
+        description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
+        cancel: {
+          label: "Cancel",
+          onClick: () => dl.cancel(),
+        },
+      })
+      onProgress?.(key, progress)
+    },
     onSuccess: (key) => {
-      toast.success("Download complete", { description: displayName })
+      toast.success("Download complete", {
+        id: `dl-${objectKey}`,
+        description: displayName,
+      })
       onSuccess?.(key)
     },
     onError: (key, error, phase) => {
       toast.error("Download failed", {
+        id: `dl-${objectKey}`,
         description: error instanceof Error ? error.message : "Unknown error",
       })
       onError?.(key, error, phase)
     },
+    onCancel,
     afterDownload,
   })
 
@@ -70,10 +86,12 @@ export function DownloadButton({
     toast.loading("Downloading…", {
       id: `dl-${objectKey}`,
       description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
+      cancel: {
+        label: "Cancel",
+        onClick: () => dl.cancel(),
+      },
     })
-    dl.download(objectKey, displayName).finally(() => {
-      toast.dismiss(`dl-${objectKey}`)
-    })
+    dl.download(objectKey, displayName)
   }
 
   return (
@@ -107,18 +125,28 @@ export function DownloadButton({
       </div>
 
       {dl.phase === "downloading" && (
-        <Progress value={dl.progress.percent}>
-          <ProgressLabel>
-            {dl.fileName ?? displayName}
-            {dl.fileSize != null && (
-              <span className="text-muted-foreground">
-                {" "}
-                · {formatFileSize(dl.fileSize)}
-              </span>
-            )}
-          </ProgressLabel>
-          <ProgressValue />
-        </Progress>
+        <div className="flex w-full items-center gap-1.5">
+          <Progress value={dl.progress.percent} className="flex-1">
+            <ProgressLabel>
+              {dl.fileName ?? displayName}
+              {dl.fileSize != null && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {formatFileSize(dl.fileSize)}
+                </span>
+              )}
+            </ProgressLabel>
+            <ProgressValue />
+          </Progress>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => dl.cancel()}
+          >
+            <XIcon className="size-4" />
+          </Button>
+        </div>
       )}
     </div>
   )

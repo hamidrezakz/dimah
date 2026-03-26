@@ -112,6 +112,7 @@ export function useUpload(options: UseUploadOptions = {}): UseUploadReturn {
       await opts.afterUpload?.(file, result)
     } catch (err) {
       if ((err as Error).name === "AbortError") {
+        opts.onCancel?.(file)
         setState(INITIAL_STATE)
         return
       }

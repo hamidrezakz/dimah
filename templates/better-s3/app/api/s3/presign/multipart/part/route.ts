@@ -3,55 +3,57 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
 import { s3 } from "@/lib/s3/s3-client"
-import { parseExpiresIn } from "@/lib/s3/utils"
+import {
+  parseBody,
+  requireString,
+  normalizeExpiresIn,
+  withS3ErrorHandler,
+} from "@/lib/s3/api-helpers"
 
-export type PartPayload = {
+type Payload = {
   key: string
   uploadId: string
   partNumber: number
   bucket?: string
   expiresIn?: number
-  contentType?: string
 }
 
-const parsePayload = (request: NextRequest): Promise<PartPayload | null> =>
-  request
-    .json()
-    .then((body) =>
-      body && typeof body === "object" ? (body as PartPayload) : null
-    )
-    .catch(() => null)
-
-export async function POST(request: NextRequest) {
-  const payload = await parsePayload(request)
-  if (!payload) {
+export const POST = withS3ErrorHandler(async (request: NextRequest) => {
+  const body = await parseBody<Payload>(request)
+  if (!body) {
     return NextResponse.json(
-      { message: "invalid JSON payload" },
+      { message: "Invalid JSON payload" },
       { status: 400 }
     )
   }
 
-  const key = payload.key?.trim()
-  const uploadId = payload.uploadId?.trim()
-  const partNumber = payload.partNumber
-  if (!key || !uploadId || !Number.isInteger(partNumber) || partNumber <= 0) {
+  const key = requireString(body.key, "key")
+  if (key instanceof NextResponse) return key
+
+  const uploadId = requireString(body.uploadId, "uploadId")
+  if (uploadId instanceof NextResponse) return uploadId
+
+  const partNumber = Number(body.partNumber)
+  if (!Number.isInteger(partNumber) || partNumber <= 0) {
     return NextResponse.json(
-      { message: "key, uploadId and integer partNumber are required" },
+      { message: "partNumber must be a positive integer" },
       { status: 400 }
     )
   }
 
-  const bucket = payload.bucket?.trim() || DEFAULT_BUCKET_NAME
-  const command = new UploadPartCommand({
-    Bucket: bucket,
-    Key: key,
-    UploadId: uploadId,
-    PartNumber: partNumber,
-  })
-  const expiresIn = parseExpiresIn(
-    payload.expiresIn == null ? null : String(payload.expiresIn)
+  const bucket = body.bucket?.trim() || DEFAULT_BUCKET_NAME
+  const expiresIn = normalizeExpiresIn(body.expiresIn)
+
+  const presignedUrl = await getSignedUrl(
+    s3,
+    new UploadPartCommand({
+      Bucket: bucket,
+      Key: key,
+      UploadId: uploadId,
+      PartNumber: partNumber,
+    }),
+    { expiresIn }
   )
-  const presignedUrl = await getSignedUrl(s3, command, { expiresIn })
 
   return NextResponse.json({
     presignedUrl,
@@ -60,4 +62,4 @@ export async function POST(request: NextRequest) {
     bucket,
     expiresIn,
   })
-}
+})

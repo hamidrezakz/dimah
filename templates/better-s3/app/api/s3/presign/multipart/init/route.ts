@@ -2,52 +2,41 @@ import { CreateMultipartUploadCommand } from "@aws-sdk/client-s3"
 import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
 import { s3 } from "@/lib/s3/s3-client"
+import {
+  parseBody,
+  requireString,
+  withS3ErrorHandler,
+} from "@/lib/s3/api-helpers"
 
-export type InitPayload = {
+type Payload = {
   key: string
   bucket?: string
   contentType?: string
   metadata?: Record<string, string>
 }
 
-const parsePayload = (request: NextRequest): Promise<InitPayload | null> =>
-  request
-    .json()
-    .then((body) =>
-      body && typeof body === "object" ? (body as InitPayload) : null
-    )
-    .catch(() => null)
-
-export async function POST(request: NextRequest) {
-  const payload = await parsePayload(request)
-  if (!payload) {
+export const POST = withS3ErrorHandler(async (request: NextRequest) => {
+  const body = await parseBody<Payload>(request)
+  if (!body) {
     return NextResponse.json(
-      { message: "invalid JSON payload" },
+      { message: "Invalid JSON payload" },
       { status: 400 }
     )
   }
 
-  const key = payload.key?.trim()
-  if (!key) {
-    return NextResponse.json({ message: "key is required" }, { status: 400 })
-  }
+  const key = requireString(body.key, "key")
+  if (key instanceof NextResponse) return key
 
-  const bucket = payload.bucket?.trim() || DEFAULT_BUCKET_NAME
-  const response = await s3.send(
+  const bucket = body.bucket?.trim() || DEFAULT_BUCKET_NAME
+
+  const { UploadId } = await s3.send(
     new CreateMultipartUploadCommand({
       Bucket: bucket,
       Key: key,
-      ContentType: payload.contentType,
-      Metadata: payload.metadata,
+      ContentType: body.contentType,
+      Metadata: body.metadata,
     })
   )
 
-  return NextResponse.json(
-    {
-      bucket,
-      key,
-      uploadId: response.UploadId,
-    },
-    { status: 201 }
-  )
-}
+  return NextResponse.json({ bucket, key, uploadId: UploadId }, { status: 201 })
+})

@@ -20,6 +20,7 @@ export type UseDownloadState = {
 
 export type UseDownloadReturn = UseDownloadState & {
   download: (key: string, downloadName?: string) => Promise<void>
+  cancel: () => void
   reset: () => void
 }
 
@@ -122,6 +123,7 @@ export function useDownload(
       await opts.afterDownload?.(key)
     } catch (err) {
       if ((err as Error).name === "AbortError") {
+        opts.onCancel?.(key)
         setState(INITIAL_STATE)
         return
       }
@@ -133,10 +135,15 @@ export function useDownload(
     }
   }, [])
 
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    setState(INITIAL_STATE)
+  }, [])
+
   const reset = useCallback(() => {
     abortRef.current?.abort()
     setState(INITIAL_STATE)
   }, [])
 
-  return { ...state, download, reset }
+  return { ...state, download, cancel, reset }
 }

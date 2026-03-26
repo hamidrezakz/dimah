@@ -54,6 +54,7 @@ export type UploadHooks = {
   onProgress?: (file: File, progress: UploadProgress) => void
   onSuccess?: (file: File, result: UploadResult) => void
   onError?: (file: File | null, error: unknown, phase: UploadPhase) => void
+  onCancel?: (file: File | null) => void
   afterUpload?: (file: File, result: UploadResult) => Promise<void> | void
 }
 
@@ -87,6 +88,7 @@ export type DownloadHooks = {
   onProgress?: (key: string, progress: DownloadProgress) => void
   onSuccess?: (key: string) => void
   onError?: (key: string, error: unknown, phase: DownloadPhase) => void
+  onCancel?: (key: string) => void
   afterDownload?: (key: string) => Promise<void> | void
 }
 

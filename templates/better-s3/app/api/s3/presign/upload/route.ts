@@ -3,8 +3,14 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
 import { s3 } from "@/lib/s3/s3-client"
+import {
+  parseBody,
+  requireString,
+  normalizeExpiresIn,
+  withS3ErrorHandler,
+} from "@/lib/s3/api-helpers"
 
-export type UploadPayload = {
+type Payload = {
   key: string
   contentType?: string
   metadata?: Record<string, string>
@@ -12,38 +18,31 @@ export type UploadPayload = {
   expiresIn?: number
 }
 
-const parsePayload = (request: NextRequest): Promise<UploadPayload | null> =>
-  request
-    .json()
-    .then((body) =>
-      body && typeof body === "object" ? (body as UploadPayload) : null
-    )
-    .catch(() => null)
-
-export async function POST(request: NextRequest) {
-  const payload = await parsePayload(request)
-  if (!payload) {
+export const POST = withS3ErrorHandler(async (request: NextRequest) => {
+  const body = await parseBody<Payload>(request)
+  if (!body) {
     return NextResponse.json(
-      { message: "invalid JSON payload" },
+      { message: "Invalid JSON payload" },
       { status: 400 }
     )
   }
 
-  const key = payload.key?.trim()
-  if (!key) {
-    return NextResponse.json({ message: "key is required" }, { status: 400 })
-  }
+  const key = requireString(body.key, "key")
+  if (key instanceof NextResponse) return key
 
-  const bucket = payload.bucket?.trim() || DEFAULT_BUCKET_NAME
+  const bucket = body.bucket?.trim() || DEFAULT_BUCKET_NAME
+  const expiresIn = normalizeExpiresIn(body.expiresIn)
 
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    ContentType: payload.contentType,
-    Metadata: payload.metadata,
-  })
-  const expiresIn = payload.expiresIn ?? 300
-  const url = await getSignedUrl(s3, command, { expiresIn })
+  const url = await getSignedUrl(
+    s3,
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: body.contentType,
+      Metadata: body.metadata,
+    }),
+    { expiresIn }
+  )
 
   return NextResponse.json({ bucket, key, url, expiresIn })
-}
+})

@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef, useState, type ReactNode } from "react"
-import { UploadIcon } from "lucide-react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
+import { UploadIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatFileSize } from "@/lib/s3/types"
@@ -84,6 +84,7 @@ function UploadInner({
     name: string
     size: number
   } | null>(null)
+  const toastIdRef = useRef<string | null>(null)
 
   const isDisabled = disabled || ctx.phase === "uploading"
 
@@ -97,9 +98,14 @@ function UploadInner({
     const key = resolveKey(file)
 
     const toastId = `upload-${file.name}`
+    toastIdRef.current = toastId
     toast.loading("Uploading…", {
       id: toastId,
       description: `${file.name} · ${formatFileSize(file.size)}`,
+      cancel: {
+        label: "Cancel",
+        onClick: () => ctx.cancel(),
+      },
     })
 
     await ctx.upload(file, key)
@@ -118,13 +124,32 @@ function UploadInner({
     prevPhaseRef.current = ctx.phase
     if (ctx.phase === "success" && fileInfo) {
       toast.success("Upload complete", {
+        id: toastIdRef.current ?? undefined,
         description: `${fileInfo.name} · ${formatFileSize(fileInfo.size)}`,
       })
+      toastIdRef.current = null
     }
     if (ctx.phase === "error" && fileInfo) {
-      toast.error("Upload failed", { description: ctx.error ?? fileInfo.name })
+      toast.error("Upload failed", {
+        id: toastIdRef.current ?? undefined,
+        description: ctx.error ?? fileInfo.name,
+      })
+      toastIdRef.current = null
     }
   }
+
+  useEffect(() => {
+    if (ctx.phase === "uploading" && toastIdRef.current && fileInfo) {
+      toast.loading(`Uploading… (${ctx.progress.percent}%)`, {
+        id: toastIdRef.current,
+        description: `${fileInfo.name} · ${formatFileSize(fileInfo.size)}`,
+        cancel: {
+          label: "Cancel",
+          onClick: () => ctx.cancel(),
+        },
+      })
+    }
+  }, [ctx.phase, ctx.progress.percent, fileInfo, ctx.cancel])
 
   const openFilePicker = () => inputRef.current?.click()
 
@@ -169,6 +194,7 @@ function UploadInner({
           progress={ctx.progress}
           error={ctx.error}
           fileInfo={fileInfo}
+          onCancel={ctx.cancel}
         />
       </div>
     )
@@ -205,6 +231,7 @@ function UploadInner({
           progress={ctx.progress}
           error={ctx.error}
           fileInfo={fileInfo}
+          onCancel={ctx.cancel}
         />
       </div>
     )
@@ -232,6 +259,7 @@ function UploadInner({
         progress={ctx.progress}
         error={ctx.error}
         fileInfo={fileInfo}
+        onCancel={ctx.cancel}
       />
     </div>
   )
@@ -242,18 +270,20 @@ function UploadStatus({
   progress,
   error,
   fileInfo,
+  onCancel,
 }: {
   phase: UploadPhase
   progress: UploadProgress
   error: string | null
   fileInfo: { name: string; size: number } | null
+  onCancel?: () => void
 }) {
   if (phase === "idle") return null
 
   if (phase === "uploading") {
     return (
-      <div className="w-full">
-        <Progress value={progress.percent}>
+      <div className="flex w-full items-center gap-1.5">
+        <Progress value={progress.percent} className="flex-1">
           <ProgressLabel>
             {fileInfo?.name ?? "Uploading…"}
             {fileInfo?.size != null && (
@@ -265,6 +295,17 @@ function UploadStatus({
           </ProgressLabel>
           <ProgressValue />
         </Progress>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0"
+          onClick={(e) => {
+            e.stopPropagation()
+            onCancel?.()
+          }}
+        >
+          <XIcon className="size-4" />
+        </Button>
       </div>
     )
   }

@@ -2,40 +2,35 @@ import { AbortMultipartUploadCommand } from "@aws-sdk/client-s3"
 import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
 import { s3 } from "@/lib/s3/s3-client"
+import {
+  parseBody,
+  requireString,
+  withS3ErrorHandler,
+} from "@/lib/s3/api-helpers"
 
-export type AbortPayload = {
+type Payload = {
   key: string
   uploadId: string
   bucket?: string
 }
 
-const parsePayload = (request: NextRequest): Promise<AbortPayload | null> =>
-  request
-    .json()
-    .then((body) =>
-      body && typeof body === "object" ? (body as AbortPayload) : null
-    )
-    .catch(() => null)
-
-export async function POST(request: NextRequest) {
-  const payload = await parsePayload(request)
-  if (!payload) {
+export const POST = withS3ErrorHandler(async (request: NextRequest) => {
+  const body = await parseBody<Payload>(request)
+  if (!body) {
     return NextResponse.json(
-      { message: "invalid JSON payload" },
+      { message: "Invalid JSON payload" },
       { status: 400 }
     )
   }
 
-  const key = payload.key?.trim()
-  const uploadId = payload.uploadId?.trim()
-  if (!key || !uploadId) {
-    return NextResponse.json(
-      { message: "key and uploadId are required" },
-      { status: 400 }
-    )
-  }
+  const key = requireString(body.key, "key")
+  if (key instanceof NextResponse) return key
 
-  const bucket = payload.bucket?.trim() || DEFAULT_BUCKET_NAME
+  const uploadId = requireString(body.uploadId, "uploadId")
+  if (uploadId instanceof NextResponse) return uploadId
+
+  const bucket = body.bucket?.trim() || DEFAULT_BUCKET_NAME
+
   await s3.send(
     new AbortMultipartUploadCommand({
       Bucket: bucket,
@@ -45,4 +40,4 @@ export async function POST(request: NextRequest) {
   )
 
   return NextResponse.json({ bucket, key, uploadId, aborted: true })
-}
+})
