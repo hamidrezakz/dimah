@@ -4,6 +4,7 @@ import {
   R2_ENDPOINT,
   R2_REGION,
   R2_SECRET_ACCESS_KEY,
+  R2_DEFAULT_BUCKET_NAME,
 } from "@/lib/s3/env"
 
 const clientConfig: S3ClientConfig = {
@@ -16,3 +17,4 @@ const clientConfig: S3ClientConfig = {
 }
 
 export const s3 = new S3Client(clientConfig)
+export const DEFAULT_BUCKET_NAME = R2_DEFAULT_BUCKET_NAME

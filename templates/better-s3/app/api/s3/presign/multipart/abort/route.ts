@@ -1,6 +1,6 @@
 import { AbortMultipartUploadCommand } from "@aws-sdk/client-s3"
 import { NextRequest, NextResponse } from "next/server"
-import { DEFAULT_BUCKET_NAME } from "@/lib/s3/env"
+import { DEFAULT_BUCKET_NAME } from "@/lib/s3/s3-client"
 import { s3 } from "@/lib/s3/s3-client"
 import {
   parseBody,
