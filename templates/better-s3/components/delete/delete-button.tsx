@@ -52,7 +52,6 @@ export function DeleteButton({
   onDeleteStart,
   onSuccess,
   onError,
-  afterDelete,
 }: DeleteButtonProps) {
   const displayName = fileName ?? objectKey.split("/").pop() ?? objectKey
 
@@ -69,7 +68,6 @@ export function DeleteButton({
       })
       onError?.(key, error, phase)
     },
-    afterDelete,
   })
 
   const isDeleting = del.phase === "deleting"

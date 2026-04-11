@@ -119,8 +119,7 @@ export function useDownload(
         fileSize: blob.size,
         progress: { loaded: blob.size, total: blob.size, percent: 100 },
       }))
-      opts.onSuccess?.(key)
-      await opts.afterDownload?.(key)
+      await opts.onSuccess?.(key)
     } catch (err) {
       if ((err as Error).name === "AbortError") {
         opts.onCancel?.(key)

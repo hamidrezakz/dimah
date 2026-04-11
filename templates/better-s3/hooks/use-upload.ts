@@ -108,8 +108,7 @@ export function useUpload(options: UseUploadOptions = {}): UseUploadReturn {
         result,
         progress: { loaded: file.size, total: file.size, percent: 100 },
       }))
-      opts.onSuccess?.(file, result)
-      await opts.afterUpload?.(file, result)
+      await opts.onSuccess?.(file, result)
     } catch (err) {
       if ((err as Error).name === "AbortError") {
         opts.onCancel?.(file)

@@ -43,7 +43,6 @@ export function DownloadButton({
   onSuccess,
   onError,
   onCancel,
-  afterDownload,
 }: DownloadButtonProps) {
   const displayName = fileName ?? objectKey.split("/").pop() ?? objectKey
 
@@ -68,15 +67,6 @@ export function DownloadButton({
       })
       onSuccess?.(key)
     },
-    onError: (key, error, phase) => {
-      toast.error("Download failed", {
-        id: `dl-${objectKey}`,
-        description: error instanceof Error ? error.message : "Unknown error",
-      })
-      onError?.(key, error, phase)
-    },
-    onCancel,
-    afterDownload,
   })
 
   const isDisabled =

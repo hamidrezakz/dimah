@@ -63,8 +63,7 @@ export function useDelete(options: UseDeleteOptions = {}): UseDeleteReturn {
       if (!res.ok) throw new Error(`Delete failed: ${res.statusText}`)
 
       setState({ phase: "success", error: null })
-      opts.onSuccess?.(pendingKey)
-      await opts.afterDelete?.(pendingKey)
+      await opts.onSuccess?.(pendingKey)
       setPendingKey(null)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Delete failed"

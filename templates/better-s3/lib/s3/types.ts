@@ -52,10 +52,9 @@ export type UploadHooks = {
   beforeUpload?: (file: File) => Promise<boolean> | boolean
   onUploadStart?: (file: File, key: string) => void
   onProgress?: (file: File, progress: UploadProgress) => void
-  onSuccess?: (file: File, result: UploadResult) => void
+  onSuccess?: (file: File, result: UploadResult) => Promise<void> | void
   onError?: (file: File | null, error: unknown, phase: UploadPhase) => void
   onCancel?: (file: File | null) => void
-  afterUpload?: (file: File, result: UploadResult) => Promise<void> | void
 }
 
 export type UploadConfig = {
@@ -86,10 +85,9 @@ export type DownloadHooks = {
   beforeDownload?: (key: string) => Promise<boolean> | boolean
   onDownloadStart?: (key: string) => void
   onProgress?: (key: string, progress: DownloadProgress) => void
-  onSuccess?: (key: string) => void
+  onSuccess?: (key: string) => Promise<void> | void
   onError?: (key: string, error: unknown, phase: DownloadPhase) => void
   onCancel?: (key: string) => void
-  afterDownload?: (key: string) => Promise<void> | void
 }
 
 // ---------------------------------------------------------------------------
@@ -106,9 +104,8 @@ export type DeletePhase =
 export type DeleteHooks = {
   beforeDelete?: (key: string) => Promise<boolean> | boolean
   onDeleteStart?: (key: string) => void
-  onSuccess?: (key: string) => void
+  onSuccess?: (key: string) => Promise<void> | void
   onError?: (key: string, error: unknown, phase: DeletePhase) => void
-  afterDelete?: (key: string) => Promise<void> | void
 }
 
 // ---------------------------------------------------------------------------

@@ -213,9 +213,6 @@ export default function Page() {
                 onError={(key, error) =>
                   console.error("Download error:", key, error)
                 }
-                afterDownload={async (key) =>
-                  console.log("After download:", key)
-                }
               />
             </div>
           </section>
@@ -279,7 +276,6 @@ export default function Page() {
                 onError={(key, error) =>
                   console.error("Delete error:", key, error)
                 }
-                afterDelete={async (key) => console.log("After delete:", key)}
               />
             </div>
           </section>
