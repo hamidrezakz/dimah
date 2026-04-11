@@ -1,6 +1,6 @@
 "use client"
 
-import { Upload } from "@/components/upload"
+import { Upload, MultiUpload } from "@/components/upload"
 import { DownloadButton } from "@/components/download"
 import { DeleteButton } from "@/components/delete"
 
@@ -181,8 +181,7 @@ export default function Page() {
               progress.
             </p>
             <div className="mt-1">
-              <Upload
-                multiple
+              <MultiUpload
                 variant="button"
                 objectKey={(file) => `multi/${Date.now()}-${file.name}`}
                 accept={["image/*"]}
@@ -203,8 +202,7 @@ export default function Page() {
               Drag and drop multiple files. Shows per-file status list.
             </p>
             <div className="mt-1">
-              <Upload
-                multiple
+              <MultiUpload
                 variant="dropzone"
                 label="Drop multiple files here"
                 objectKey={(file) => `batch/${file.name}`}
@@ -224,8 +222,7 @@ export default function Page() {
               Multiple large files with multipart upload for each.
             </p>
             <div className="mt-1">
-              <Upload
-                multiple
+              <MultiUpload
                 variant="dropzone"
                 label="Drop large files here"
                 objectKey={(file) => `multi-large/${file.name}`}
