@@ -14,4 +14,3 @@ export const R2_SECRET_ACCESS_KEY = envOrThrow("R2_SECRET_ACCESS_KEY")
 export const R2_REGION = process.env.R2_REGION ?? "auto"
 export const R2_ENDPOINT =
   process.env.R2_ENDPOINT ?? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-export const R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL ?? ""

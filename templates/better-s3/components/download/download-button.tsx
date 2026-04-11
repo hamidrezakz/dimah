@@ -67,6 +67,14 @@ export function DownloadButton({
       })
       onSuccess?.(key)
     },
+    onError: (key, error, phase) => {
+      toast.error("Download failed", {
+        id: `dl-${objectKey}`,
+        description: error instanceof Error ? error.message : "Unknown error",
+      })
+      onError?.(key, error, phase)
+    },
+    onCancel,
   })
 
   const isDisabled =
@@ -137,6 +145,12 @@ export function DownloadButton({
             <XIcon className="size-4" />
           </Button>
         </div>
+      )}
+
+      {dl.phase === "error" && (
+        <span className="text-xs text-destructive">
+          {dl.error ?? "Download failed"}
+        </span>
       )}
     </div>
   )

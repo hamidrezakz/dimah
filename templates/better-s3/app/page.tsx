@@ -170,6 +170,71 @@ export default function Page() {
               />
             </div>
           </section>
+
+          {/* Multi-file — Button */}
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Multi-File — Button
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Select multiple files at once. Uploads concurrently with per-file
+              progress.
+            </p>
+            <div className="mt-1">
+              <Upload
+                multiple
+                variant="button"
+                objectKey={(file) => `multi/${Date.now()}-${file.name}`}
+                accept={["image/*"]}
+                maxFileSize={10 * 1024 * 1024}
+                maxFiles={5}
+                tooltipText="Select up to 5 images"
+                onSuccess={(results) => console.log("All uploaded:", results)}
+              />
+            </div>
+          </section>
+
+          {/* Multi-file — Dropzone */}
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Multi-File — Dropzone
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Drag and drop multiple files. Shows per-file status list.
+            </p>
+            <div className="mt-1">
+              <Upload
+                multiple
+                variant="dropzone"
+                label="Drop multiple files here"
+                objectKey={(file) => `batch/${file.name}`}
+                accept={["image/*", "application/pdf"]}
+                maxFileSize={25 * 1024 * 1024}
+                maxFiles={10}
+              />
+            </div>
+          </section>
+
+          {/* Multi-file + Multipart */}
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Multi-File + Multipart
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Multiple large files with multipart upload for each.
+            </p>
+            <div className="mt-1">
+              <Upload
+                multiple
+                variant="dropzone"
+                label="Drop large files here"
+                objectKey={(file) => `multi-large/${file.name}`}
+                multipart
+                multipartThreshold={20 * 1024 * 1024}
+                maxFiles={5}
+              />
+            </div>
+          </section>
         </div>
 
         {/* ── Download ── */}

@@ -1,2 +1,2 @@
-export { Upload, type UploadVariantType } from "./upload"
+export { Upload, type UploadVariantType, type UploadProps } from "./upload"
 export { UploadProvider, useUploadContext } from "./upload-context"
