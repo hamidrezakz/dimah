@@ -310,7 +310,7 @@ export default function Page() {
               Minimal delete button with a confirmation dialog.
             </p>
             <div className="mt-1">
-              <DeleteButton objectKey="uploads/old-file.txt" />
+              <DeleteButton objectKey="pdfs/chapter2-1.pdf" />
             </div>
           </section>
 

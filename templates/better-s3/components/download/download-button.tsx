@@ -92,7 +92,7 @@ export function DownloadButton({
                 size="default"
                 variant="outline"
                 disabled={disabled}
-                className="relative overflow-hidden"
+                className="relative min-w-24 overflow-hidden"
                 onClick={handleClick}
               />
             }
