@@ -36,8 +36,8 @@ export const presignApi = {
   },
 
   delete(key: string) {
-    return json<PresignResponse>(
-      `/api/s3/presign/delete?key=${encodeURIComponent(key)}`,
+    return json<{ success: boolean; bucket: string; key: string }>(
+      `/api/s3/delete?key=${encodeURIComponent(key)}`,
       { method: "DELETE" }
     )
   },

@@ -57,10 +57,7 @@ export function useDelete(options: UseDeleteOptions = {}): UseDeleteReturn {
     opts.onDeleteStart?.(pendingKey)
 
     try {
-      const { url } = await presignApi.delete(pendingKey)
-
-      const res = await fetch(url, { method: "DELETE" })
-      if (!res.ok) throw new Error(`Delete failed: ${res.statusText}`)
+      await presignApi.delete(pendingKey)
 
       setState({ phase: "success", error: null })
       await opts.onSuccess?.(pendingKey)
