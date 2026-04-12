@@ -245,7 +245,7 @@ export default function Page() {
               Minimal download button with just an object key.
             </p>
             <div className="mt-1">
-              <DownloadButton objectKey="uploads/example.pdf" />
+              <DownloadButton className="" objectKey="pdfs/chapter2-1.pdf" />
             </div>
           </section>
 

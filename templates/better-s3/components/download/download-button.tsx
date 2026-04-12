@@ -1,16 +1,11 @@
 "use client"
 
-import { DownloadIcon, XIcon } from "lucide-react"
+import { DownloadIcon, AlertCircleIcon } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatFileSize } from "@/lib/s3/types"
 import type { DownloadHooks } from "@/lib/s3/types"
 import { Button } from "@/components/ui/button"
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from "@/components/ui/progress"
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +20,7 @@ type DownloadButtonProps = DownloadHooks & {
   fileSize?: number
   label?: string
   className?: string
+  fillClassName?: string
   disabled?: boolean
   tooltipText?: string
 }
@@ -35,6 +31,7 @@ export function DownloadButton({
   fileSize,
   label,
   className,
+  fillClassName,
   disabled,
   tooltipText = "Download file",
   beforeDownload,
@@ -49,108 +46,91 @@ export function DownloadButton({
   const dl = useDownload({
     beforeDownload,
     onDownloadStart,
-    onProgress: (key, progress) => {
-      toast.loading(`Downloading… (${progress.percent}%)`, {
-        id: `dl-${objectKey}`,
-        description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
-        cancel: {
-          label: "Cancel",
-          onClick: () => dl.cancel(),
-        },
-      })
-      onProgress?.(key, progress)
-    },
+    onProgress,
     onSuccess: (key) => {
+      toast.dismiss(`dl-${objectKey}`)
       toast.success("Download complete", {
-        id: `dl-${objectKey}`,
-        description: displayName,
+        description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
       })
       onSuccess?.(key)
     },
     onError: (key, error, phase) => {
+      toast.dismiss(`dl-${objectKey}`)
       toast.error("Download failed", {
-        id: `dl-${objectKey}`,
         description: error instanceof Error ? error.message : "Unknown error",
       })
       onError?.(key, error, phase)
     },
-    onCancel,
+    onCancel: (key) => {
+      toast.dismiss(`dl-${objectKey}`)
+      toast.info("Download cancelled", { description: displayName })
+      onCancel?.(key)
+    },
   })
 
-  const isDisabled =
-    disabled || dl.phase === "downloading" || dl.phase === "presigning"
+  const isDownloading = dl.phase === "downloading" || dl.phase === "presigning"
 
   const handleClick = () => {
-    toast.loading("Downloading…", {
+    if (isDownloading) {
+      dl.cancel()
+      return
+    }
+    toast(`Downloading ${displayName}`, {
       id: `dl-${objectKey}`,
-      description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
-      cancel: {
-        label: "Cancel",
-        onClick: () => dl.cancel(),
-      },
+      description: fileSize != null ? formatFileSize(fileSize) : undefined,
     })
     dl.download(objectKey, displayName)
   }
 
   return (
     <div className={cn("inline-flex flex-col gap-1.5", className)}>
-      <div className="inline-flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  size="default"
-                  variant="outline"
-                  disabled={isDisabled}
-                  onClick={handleClick}
-                />
-              }
-            >
-              <DownloadIcon data-icon="inline-start" />
-              {label ?? "Download"}
-            </TooltipTrigger>
-            <TooltipContent>{tooltipText}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {(dl.phase === "idle" || dl.phase === "presigning") &&
-          fileSize != null && (
-            <span className="text-xs text-muted-foreground">
-              {displayName} · {formatFileSize(fileSize)}
-            </span>
-          )}
-      </div>
-
-      {dl.phase === "downloading" && (
-        <div className="flex w-full items-center gap-1.5">
-          <Progress value={dl.progress.percent} className="flex-1">
-            <ProgressLabel>
-              {dl.fileName ?? displayName}
-              {dl.fileSize != null && (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · {formatFileSize(dl.fileSize)}
-                </span>
-              )}
-            </ProgressLabel>
-            <ProgressValue />
-          </Progress>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 shrink-0"
-            onClick={() => dl.cancel()}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="default"
+                variant="outline"
+                disabled={disabled}
+                className="relative overflow-hidden"
+                onClick={handleClick}
+              />
+            }
           >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
-      )}
+            {isDownloading && (
+              <span
+                className={cn(
+                  "absolute inset-0 bg-primary/15 transition-[width] duration-200",
+                  fillClassName
+                )}
+                style={{ width: `${dl.progress.percent}%` }}
+              />
+            )}
+            <span className="relative z-10 inline-flex items-center gap-1">
+              <DownloadIcon data-icon="inline-start" />
+              {isDownloading
+                ? formatFileSize(dl.progress.loaded)
+                : (label ?? "Download")}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isDownloading ? "Cancel download" : tooltipText}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       {dl.phase === "error" && (
-        <span className="text-xs text-destructive">
-          {dl.error ?? "Download failed"}
-        </span>
+        <div className="flex flex-col gap-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            <AlertCircleIcon className="size-3.5 shrink-0 text-destructive" />
+            <span className="max-w-32 min-w-16 truncate sm:max-w-48">
+              {dl.fileName ?? displayName}
+            </span>
+          </div>
+          <span className="text-destructive">
+            {dl.error ?? "Download failed"}
+          </span>
+        </div>
       )}
     </div>
   )

@@ -54,7 +54,10 @@ export function UploadShell({
       accept={accept}
       className="hidden"
       disabled={isDisabled}
-      onChange={(e) => onFiles(e.target.files)}
+      onChange={(e) => {
+        onFiles(e.target.files)
+        e.target.value = ""
+      }}
     />
   )
 

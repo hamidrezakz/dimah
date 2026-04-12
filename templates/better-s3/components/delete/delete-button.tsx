@@ -1,6 +1,6 @@
 "use client"
 
-import { Trash2Icon, LoaderIcon } from "lucide-react"
+import { Trash2Icon, LoaderIcon, AlertCircleIcon } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatFileSize } from "@/lib/s3/types"
@@ -78,60 +78,77 @@ export function DeleteButton({
     `Are you sure you want to delete "${displayName}"${fileSize != null ? ` (${formatFileSize(fileSize)})` : ""}? This action cannot be undone.`
 
   return (
-    <div className={cn("inline-flex items-center gap-2", className)}>
-      <AlertDialog
-        open={del.phase === "confirming"}
-        onOpenChange={(open) => {
-          if (!open) del.cancelDelete()
-        }}
-      >
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <AlertDialogTrigger
-                  disabled={isDisabled}
-                  onClick={() => del.requestDelete(objectKey)}
-                  render={
-                    <Button
-                      size="default"
-                      variant="destructive"
-                      disabled={isDisabled}
-                    />
-                  }
-                />
-              }
-            >
-              {isDeleting ? (
-                <LoaderIcon className="animate-spin" data-icon="inline-start" />
-              ) : (
-                <Trash2Icon data-icon="inline-start" />
-              )}
-              {label ?? "Delete"}
-            </TooltipTrigger>
-            <TooltipContent>{tooltipText}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+    <div className={cn("inline-flex flex-col gap-1.5", className)}>
+      <div className="inline-flex items-center gap-2">
+        <AlertDialog
+          open={del.phase === "confirming"}
+          onOpenChange={(open) => {
+            if (!open) del.cancelDelete()
+          }}
+        >
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <AlertDialogTrigger
+                    disabled={isDisabled}
+                    onClick={() => del.requestDelete(objectKey)}
+                    render={
+                      <Button
+                        size="default"
+                        variant="destructive"
+                        disabled={isDisabled}
+                      />
+                    }
+                  />
+                }
+              >
+                {isDeleting ? (
+                  <LoaderIcon
+                    className="animate-spin"
+                    data-icon="inline-start"
+                  />
+                ) : (
+                  <Trash2Icon data-icon="inline-start" />
+                )}
+                {label ?? "Delete"}
+              </TooltipTrigger>
+              <TooltipContent>{tooltipText}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <Trash2Icon />
-            </AlertDialogMedia>
-            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => del.confirmDelete()}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogMedia>
+                <Trash2Icon />
+              </AlertDialogMedia>
+              <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{description}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => del.confirmDelete()}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {del.phase === "error" && (
+        <div className="flex flex-col gap-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            <AlertCircleIcon className="size-3.5 shrink-0 text-destructive" />
+            <span className="max-w-32 truncate sm:max-w-48">{displayName}</span>
+          </div>
+          <span className="text-destructive">
+            {del.error ?? "Delete failed"}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

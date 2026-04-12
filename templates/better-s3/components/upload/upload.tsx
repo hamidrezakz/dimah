@@ -219,7 +219,9 @@ function UploadStatus({
     return (
       <div className="flex items-center gap-1.5 text-xs">
         <CheckCircleIcon className="size-3.5 shrink-0 text-green-600" />
-        <span className="max-w-32 truncate sm:max-w-48">{fileInfo.name}</span>
+        <span className="max-w-32 min-w-16 truncate sm:max-w-48">
+          {fileInfo.name}
+        </span>
         <span className="shrink-0 text-muted-foreground">
           {formatFileSize(fileInfo.size)}
         </span>
