@@ -11,6 +11,16 @@ export {
   type UseMultiUploadReturn,
 } from "./use-multi-upload";
 export {
+  useUploadControls,
+  type UseUploadControlsOptions,
+  type UseUploadControlsReturn,
+} from "./use-upload-controls";
+export {
+  useMultiUploadControls,
+  type UseMultiUploadControlsOptions,
+  type UseMultiUploadControlsReturn,
+} from "./use-multi-upload-controls";
+export {
   useDownload,
   type UseDownloadOptions,
   type UseDownloadState,
@@ -22,4 +32,3 @@ export {
   type UseDeleteState,
   type UseDeleteReturn,
 } from "./use-delete";
-export { UploadProvider, useUploadContext } from "./upload-context";

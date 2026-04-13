@@ -35,6 +35,10 @@ type DeleteButtonProps = DeleteHooks & {
   className?: string;
   disabled?: boolean;
   tooltipText?: string;
+  /** Enable sonner toasts (default: `true`) */
+  toast?: boolean;
+  /** Show inline error status below the button (default: `true`) */
+  showStatus?: boolean;
   confirmTitle?: string;
   confirmDescription?: string;
 };
@@ -48,6 +52,8 @@ export function DeleteButton({
   className,
   disabled,
   tooltipText = "Delete file",
+  toast: enableToast = true,
+  showStatus = true,
   confirmTitle = "Delete file?",
   confirmDescription,
   beforeDelete,
@@ -62,13 +68,17 @@ export function DeleteButton({
     beforeDelete,
     onDeleteStart,
     onSuccess: (key) => {
-      toast.success("File deleted", { description: displayName });
+      if (enableToast) {
+        toast.success("File deleted", { description: displayName });
+      }
       onSuccess?.(key);
     },
     onError: (key, error, phase) => {
-      toast.error("Delete failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      if (enableToast) {
+        toast.error("Delete failed", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
       onError?.(key, error, phase);
     },
   });
@@ -138,7 +148,7 @@ export function DeleteButton({
         </AlertDialog>
       </div>
 
-      {del.phase === "error" && (
+      {showStatus && del.phase === "error" && (
         <div className="flex flex-col gap-1 text-xs">
           <div className="flex items-center gap-1.5">
             <AlertCircleIcon className="size-3.5 shrink-0 text-destructive" />

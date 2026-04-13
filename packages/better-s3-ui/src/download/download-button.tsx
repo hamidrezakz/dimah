@@ -24,6 +24,10 @@ type DownloadButtonProps = DownloadHooks & {
   fillClassName?: string;
   disabled?: boolean;
   tooltipText?: string;
+  /** Enable sonner toasts (default: `true`) */
+  toast?: boolean;
+  /** Show inline error status below the button (default: `true`) */
+  showStatus?: boolean;
   /**
    * `"native"` — browser handles download natively via presigned URL (default)
    * `"fetch"`  — streams via fetch, shows in-button progress
@@ -41,6 +45,8 @@ export function DownloadButton({
   fillClassName,
   disabled,
   tooltipText = "Download file",
+  toast: enableToast = true,
+  showStatus = true,
   mode = "native",
   beforeDownload,
   onDownloadStart,
@@ -58,22 +64,28 @@ export function DownloadButton({
     onDownloadStart,
     onProgress,
     onSuccess: (key) => {
-      toast.dismiss(`dl-${objectKey}`);
-      toast.success("Download complete", {
-        description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
-      });
+      if (enableToast) {
+        toast.dismiss(`dl-${objectKey}`);
+        toast.success("Download complete", {
+          description: `${displayName}${fileSize != null ? ` · ${formatFileSize(fileSize)}` : ""}`,
+        });
+      }
       onSuccess?.(key);
     },
     onError: (key, error, phase) => {
-      toast.dismiss(`dl-${objectKey}`);
-      toast.error("Download failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+      if (enableToast) {
+        toast.dismiss(`dl-${objectKey}`);
+        toast.error("Download failed", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
       onError?.(key, error, phase);
     },
     onCancel: (key) => {
-      toast.dismiss(`dl-${objectKey}`);
-      toast.info("Download cancelled", { description: displayName });
+      if (enableToast) {
+        toast.dismiss(`dl-${objectKey}`);
+        toast.info("Download cancelled", { description: displayName });
+      }
       onCancel?.(key);
     },
   });
@@ -135,7 +147,7 @@ export function DownloadButton({
         </Tooltip>
       </TooltipProvider>
 
-      {dl.phase === "error" && (
+      {showStatus && dl.phase === "error" && (
         <div className="flex flex-col gap-1 text-xs">
           <div className="flex items-center gap-1.5">
             <AlertCircleIcon className="size-3.5 shrink-0 text-destructive" />
