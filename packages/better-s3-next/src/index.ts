@@ -1,4 +1,5 @@
 export { createHandlers } from "./create-handlers";
+export { createRouteHandler, type RouteHandlerConfig } from "./router";
 export { createUploadHandler } from "./handlers/upload";
 export { createDownloadHandler } from "./handlers/download";
 export { createDeleteHandler } from "./handlers/delete";

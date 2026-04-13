@@ -1,6 +1,5 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
-import { NextRequest, NextResponse } from "next/server"
 import { DEFAULT_BUCKET_NAME } from "@/lib/s3/s3-client"
 import { s3 } from "@/lib/s3/s3-client"
 import {
@@ -18,17 +17,14 @@ type Payload = {
   expiresIn?: number
 }
 
-export const POST = withS3ErrorHandler(async (request: NextRequest) => {
+export const POST = withS3ErrorHandler(async (request: Request) => {
   const body = await parseBody<Payload>(request)
   if (!body) {
-    return NextResponse.json(
-      { message: "Invalid JSON payload" },
-      { status: 400 }
-    )
+    return Response.json({ message: "Invalid JSON payload" }, { status: 400 })
   }
 
   const key = requireString(body.key, "key")
-  if (key instanceof NextResponse) return key
+  if (key instanceof Response) return key
 
   const bucket = body.bucket?.trim() || DEFAULT_BUCKET_NAME
   const expiresIn = normalizeExpiresIn(body.expiresIn)
@@ -44,5 +40,5 @@ export const POST = withS3ErrorHandler(async (request: NextRequest) => {
     { expiresIn }
   )
 
-  return NextResponse.json({ bucket, key, url, expiresIn })
+  return Response.json({ bucket, key, url, expiresIn })
 })

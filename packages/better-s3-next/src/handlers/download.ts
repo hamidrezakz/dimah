@@ -1,15 +1,14 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { NextRequest, NextResponse } from "next/server";
 import type { S3HandlerConfig } from "../types";
 import { normalizeExpiresIn, withS3ErrorHandler } from "../helpers";
 
 export function createDownloadHandler(config: S3HandlerConfig) {
-  return withS3ErrorHandler(async (request: NextRequest) => {
-    const { searchParams } = request.nextUrl;
+  return withS3ErrorHandler(async (request: Request) => {
+    const { searchParams } = new URL(request.url);
     const key = searchParams.get("key")?.trim();
     if (!key) {
-      return NextResponse.json(
+      return Response.json(
         { message: "key query parameter is required" },
         { status: 400 },
       );
@@ -29,6 +28,6 @@ export function createDownloadHandler(config: S3HandlerConfig) {
       { expiresIn },
     );
 
-    return NextResponse.json({ bucket, key, url, expiresIn });
+    return Response.json({ bucket, key, url, expiresIn });
   });
 }
