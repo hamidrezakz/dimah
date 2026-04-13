@@ -7,9 +7,9 @@ import { formatFileSize } from "@better-s3/core";
 import type { UploadPhase, UploadProgress } from "@better-s3/core";
 import type { UseUploadOptions } from "@better-s3/react";
 import { UploadProvider, useUploadContext } from "@better-s3/react";
-import { Button } from "./ui/button";
-import { CircleProgress } from "./ui/circle-progress";
-import { UploadShell, type UploadVariantType } from "./upload-shell";
+import { Button } from "@/components/ui/button";
+import { CircleProgress } from "@/components/ui/circle-progress";
+import { UploadShell, type UploadVariantType } from "@/upload-shell";
 
 export type UploadProps = {
   variant?: UploadVariantType;

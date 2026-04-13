@@ -2,11 +2,11 @@
 
 import { Trash2Icon, LoaderIcon, AlertCircleIcon } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "./cn";
+import { cn } from "@/lib/utils";
 import { formatFileSize } from "@better-s3/core";
 import type { PresignApi, DeleteHooks } from "@better-s3/core";
 import { useDelete } from "@better-s3/react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +18,13 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "./ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
+} from "@/components/ui/tooltip";
 
 type DeleteButtonProps = DeleteHooks & {
   presignApi: PresignApi;

@@ -1,17 +1,17 @@
-"use client";
+"use client"
 
 export function CircleProgress({
   percent,
   size = 20,
   strokeWidth = 2.5,
 }: {
-  percent: number;
-  size?: number;
-  strokeWidth?: number;
+  percent: number
+  size?: number
+  strokeWidth?: number
 }) {
-  const r = (size - strokeWidth) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c - (percent / 100) * c;
+  const r = (size - strokeWidth) / 2
+  const c = 2 * Math.PI * r
+  const offset = c - (percent / 100) * c
   return (
     <svg width={size} height={size} className="shrink-0 -rotate-90">
       <circle
@@ -36,5 +36,5 @@ export function CircleProgress({
         className="text-primary transition-[stroke-dashoffset] duration-200"
       />
     </svg>
-  );
+  )
 }

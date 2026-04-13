@@ -14,4 +14,9 @@ export default defineConfig({
   skipNodeModulesBundle: true,
   external: [/^[^./]/],
   banner: { js: '"use client";' },
+  esbuildOptions(options) {
+    options.alias = {
+      "@": "./src",
+    };
+  },
 });

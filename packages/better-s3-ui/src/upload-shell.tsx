@@ -2,14 +2,14 @@
 
 import { useRef, type ReactNode } from "react";
 import { UploadIcon } from "lucide-react";
-import { cn } from "./cn";
-import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
+} from "@/components/ui/tooltip";
 
 export type UploadVariantType = "button" | "dropzone" | "custom";
 

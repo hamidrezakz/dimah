@@ -6,10 +6,14 @@ import { toast } from "sonner";
 import { formatFileSize } from "@better-s3/core";
 import type { UploadProgress, MultiUploadFileState } from "@better-s3/core";
 import { useMultiUpload, type UseMultiUploadOptions } from "@better-s3/react";
-import { Button } from "./ui/button";
-import { Progress, ProgressLabel, ProgressValue } from "./ui/progress";
-import { CircleProgress } from "./ui/circle-progress";
-import { UploadShell, type UploadVariantType } from "./upload-shell";
+import { Button } from "@/components/ui/button";
+import {
+  Progress,
+  ProgressLabel,
+  ProgressValue,
+} from "@/components/ui/progress";
+import { CircleProgress } from "@/components/ui/circle-progress";
+import { UploadShell, type UploadVariantType } from "@/upload-shell";
 
 export type MultiUploadProps = {
   variant?: UploadVariantType;

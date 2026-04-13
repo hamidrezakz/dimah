@@ -2,17 +2,17 @@
 
 import { DownloadIcon, AlertCircleIcon } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "./cn";
+import { cn } from "@/lib/utils";
 import { formatFileSize } from "@better-s3/core";
 import type { PresignApi, DownloadHooks } from "@better-s3/core";
 import { useDownload } from "@better-s3/react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
+} from "@/components/ui/tooltip";
 
 type DownloadButtonProps = DownloadHooks & {
   presignApi: PresignApi;
