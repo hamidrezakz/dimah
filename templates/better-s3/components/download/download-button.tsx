@@ -23,6 +23,11 @@ type DownloadButtonProps = DownloadHooks & {
   fillClassName?: string
   disabled?: boolean
   tooltipText?: string
+  /**
+   * `"native"` — browser handles download natively via presigned URL (default)
+   * `"fetch"`  — streams via fetch, shows in-button progress
+   */
+  mode?: "native" | "fetch"
 }
 
 export function DownloadButton({
@@ -34,6 +39,7 @@ export function DownloadButton({
   fillClassName,
   disabled,
   tooltipText = "Download file",
+  mode = "native",
   beforeDownload,
   onDownloadStart,
   onProgress,
@@ -44,6 +50,7 @@ export function DownloadButton({
   const displayName = fileName ?? objectKey.split("/").pop() ?? objectKey
 
   const dl = useDownload({
+    mode,
     beforeDownload,
     onDownloadStart,
     onProgress,
@@ -68,17 +75,18 @@ export function DownloadButton({
     },
   })
 
-  const isDownloading = dl.phase === "downloading" || dl.phase === "presigning"
+  const isFetchDownloading =
+    mode === "fetch" &&
+    (dl.phase === "downloading" || dl.phase === "presigning")
+
+  const isLoading =
+    mode === "native" ? dl.phase === "presigning" : isFetchDownloading
 
   const handleClick = () => {
-    if (isDownloading) {
+    if (mode === "fetch" && isFetchDownloading) {
       dl.cancel()
       return
     }
-    toast(`Downloading ${displayName}`, {
-      id: `dl-${objectKey}`,
-      description: fileSize != null ? formatFileSize(fileSize) : undefined,
-    })
     dl.download(objectKey, displayName)
   }
 
@@ -91,13 +99,15 @@ export function DownloadButton({
               <Button
                 size="default"
                 variant="outline"
-                disabled={disabled}
-                className="relative min-w-24 overflow-hidden"
+                disabled={disabled || (mode === "native" && isLoading)}
+                className={cn(
+                  mode === "fetch" && "relative min-w-24 overflow-hidden"
+                )}
                 onClick={handleClick}
               />
             }
           >
-            {isDownloading && (
+            {isFetchDownloading && (
               <span
                 className={cn(
                   "absolute inset-0 bg-primary/15 transition-[width] duration-200",
@@ -106,15 +116,20 @@ export function DownloadButton({
                 style={{ width: `${dl.progress.percent}%` }}
               />
             )}
-            <span className="relative z-10 inline-flex items-center gap-1">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1",
+                mode === "fetch" && "relative z-10"
+              )}
+            >
               <DownloadIcon data-icon="inline-start" />
-              {isDownloading
+              {isFetchDownloading
                 ? formatFileSize(dl.progress.loaded)
                 : (label ?? "Download")}
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            {isDownloading ? "Cancel download" : tooltipText}
+            {isFetchDownloading ? "Cancel download" : tooltipText}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

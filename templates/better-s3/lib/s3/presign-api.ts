@@ -29,10 +29,14 @@ export const presignApi = {
     return post<PresignResponse>("/api/s3/presign/upload", payload)
   },
 
-  download(key: string) {
-    return json<PresignResponse>(
-      `/api/s3/presign/download?key=${encodeURIComponent(key)}`
-    )
+  download(key: string, fileName?: string) {
+    const params = new URLSearchParams({ key })
+    if (fileName) {
+      // Sanitize for Content-Disposition header safety
+      const safe = fileName.replace(/["\\\r\n]/g, "_")
+      params.set("fileName", safe)
+    }
+    return json<PresignResponse>(`/api/s3/presign/download?${params}`)
   },
 
   delete(key: string) {

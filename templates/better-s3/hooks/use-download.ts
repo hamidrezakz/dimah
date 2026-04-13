@@ -8,7 +8,13 @@ import type {
 } from "@/lib/s3/types"
 import { presignApi } from "@/lib/s3/presign-api"
 
-export type UseDownloadOptions = DownloadHooks
+export type UseDownloadOptions = DownloadHooks & {
+  /**
+   * `"native"` — browser handles download natively via presigned URL (default)
+   * `"fetch"`  — streams via fetch, enables in-app progress tracking
+   */
+  mode?: "native" | "fetch"
+}
 
 export type UseDownloadState = {
   phase: DownloadPhase
@@ -45,6 +51,7 @@ export function useDownload(
   const download = useCallback(async (key: string, downloadName?: string) => {
     const name = downloadName ?? key.split("/").pop() ?? key
     const opts = optionsRef.current
+    const mode = opts.mode ?? "native"
 
     // beforeDownload guard
     if (opts.beforeDownload) {
@@ -69,8 +76,20 @@ export function useDownload(
     })
 
     try {
-      const { url } = await presignApi.download(key)
+      const { url } = await presignApi.download(key, name)
 
+      if (mode === "native") {
+        const anchor = document.createElement("a")
+        anchor.href = url
+        anchor.download = name
+        anchor.click()
+        setState((s) => ({ ...s, phase: "success" }))
+        await opts.onSuccess?.(key)
+        setState(INITIAL_STATE)
+        return
+      }
+
+      // ── Fetch mode ───────────────────────────────────────────────
       setState((s) => ({ ...s, phase: "downloading" }))
       opts.onDownloadStart?.(key)
 

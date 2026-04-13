@@ -5,7 +5,8 @@ const DEFAULT_MULTIPART_THRESHOLD = 50 * 1024 * 1024
 const DEFAULT_PART_SIZE = 10 * 1024 * 1024
 const MAX_RETRIES = 3
 const RETRY_BASE_DELAY = 1000
-const MAX_CONCURRENT_PARTS = 3
+const DEFAULT_CONCURRENT_PARTS = 3
+const DEFAULT_CONCURRENT_FILES = 2
 
 // ---------------------------------------------------------------------------
 // Retry helper — exponential backoff, skips AbortError
@@ -43,7 +44,7 @@ function uploadSimple(
   presignedUrl: string,
   onProgress?: (progress: UploadProgress) => void,
   signal?: AbortSignal
-): Promise<void> {
+): Promise<string | undefined> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
 
@@ -67,7 +68,8 @@ function uploadSimple(
       signal?.removeEventListener("abort", onAbort)
       if (xhr.status >= 200 && xhr.status < 300) {
         onProgress?.({ loaded: file.size, total: file.size, percent: 100 })
-        resolve()
+        const eTag = xhr.getResponseHeader("ETag")?.replace(/"/g, "")
+        resolve(eTag ?? undefined)
       } else {
         reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
       }
@@ -151,6 +153,7 @@ async function uploadMultipart(
   file: File,
   objectKey: string,
   partSize: number,
+  concurrentParts: number,
   onProgress?: (progress: UploadProgress) => void,
   signal?: AbortSignal
 ): Promise<void> {
@@ -182,13 +185,13 @@ async function uploadMultipart(
     for (
       let batchStart = 0;
       batchStart < totalParts;
-      batchStart += MAX_CONCURRENT_PARTS
+      batchStart += concurrentParts
     ) {
       if (signal?.aborted) {
         throw new DOMException("Upload aborted", "AbortError")
       }
 
-      const batchEnd = Math.min(batchStart + MAX_CONCURRENT_PARTS, totalParts)
+      const batchEnd = Math.min(batchStart + concurrentParts, totalParts)
       const batch: Array<Promise<{ partNumber: number; eTag: string }>> = []
 
       for (let i = batchStart; i < batchEnd; i++) {
@@ -258,37 +261,39 @@ export async function uploadFile(
 ): Promise<UploadResult> {
   const threshold = config.multipartThreshold ?? DEFAULT_MULTIPART_THRESHOLD
   const useMultipart = config.multipart === true && file.size >= threshold
+  const concurrentParts = config.concurrentParts ?? DEFAULT_CONCURRENT_PARTS
+
+  let eTag: string | undefined
 
   if (useMultipart) {
     await uploadMultipart(
       file,
       objectKey,
       DEFAULT_PART_SIZE,
+      concurrentParts,
       callbacks.onProgress,
       signal
     )
   } else {
-    await withRetry(
+    eTag = await withRetry(
       async () => {
         const presign = await presignApi.upload({
           key: objectKey,
           contentType: file.type,
         })
-        await uploadSimple(file, presign.url, callbacks.onProgress, signal)
+        return uploadSimple(file, presign.url, callbacks.onProgress, signal)
       },
       MAX_RETRIES,
       signal
     )
   }
 
-  return { key: objectKey }
+  return { key: objectKey, eTag }
 }
 
 // ---------------------------------------------------------------------------
 // Multi-file upload with per-file tracking and concurrency
 // ---------------------------------------------------------------------------
-
-const MAX_CONCURRENT_FILES = 2
 
 export type FileItemStatus = "pending" | "uploading" | "success" | "error"
 
@@ -382,8 +387,9 @@ export async function uploadFiles(
     }
   }
 
+  const concurrentFiles = config.concurrentFiles ?? DEFAULT_CONCURRENT_FILES
   const workers = Array.from(
-    { length: Math.min(MAX_CONCURRENT_FILES, items.length) },
+    { length: Math.min(concurrentFiles, items.length) },
     () => processNext()
   )
   await Promise.all(workers)

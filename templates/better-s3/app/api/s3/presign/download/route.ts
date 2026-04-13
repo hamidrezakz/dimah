@@ -17,10 +17,15 @@ export const GET = withS3ErrorHandler(async (request: NextRequest) => {
 
   const bucket = searchParams.get("bucket")?.trim() || DEFAULT_BUCKET_NAME
   const expiresIn = normalizeExpiresIn(searchParams.get("expiresIn"))
+  const fileName = searchParams.get("fileName")?.trim()
 
   const url = await getSignedUrl(
     s3,
-    new GetObjectCommand({ Bucket: bucket, Key: key }),
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ResponseContentDisposition: `attachment${fileName ? `; filename="${fileName}"` : ""}`,
+    }),
     { expiresIn }
   )
 

@@ -63,6 +63,8 @@ export type UploadConfig = {
   maxFileSize?: number
   maxFiles?: number
   multipartThreshold?: number
+  concurrentParts?: number
+  concurrentFiles?: number
 }
 
 // ---------------------------------------------------------------------------
