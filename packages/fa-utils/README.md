@@ -2,6 +2,13 @@
 
 A tiny helper package for Persian formatting with built-in JavaScript Intl APIs.
 
+## Features
+
+- Date formatting with Persian calendar via Intl.
+- Number and currency formatting for Persian locale.
+- Digit conversion helpers for UI and normalization.
+- Iran mobile phone normalization for UI and DB targets.
+
 ## Install
 
 ```bash
@@ -16,6 +23,7 @@ import {
   formatFaDate,
   formatFaNumber,
   formatIranPhone,
+  toEnglishDigits,
   toPersianDigits,
 } from "@dimah/fa-utils";
 
@@ -42,12 +50,34 @@ formatFaCurrency(49.99, "USD");
 toPersianDigits("Order #2026");
 // Order #۲۰۲۶
 
-formatIranPhone("+989305138169");
-// ۰۹۳۰۵۱۳۸۱۶۹
+toEnglishDigits("Order #۲۰۲۶");
+// Order #2026
 
-formatIranPhone("+989305138169", { uiDigits: "en" });
+formatIranPhone("+989305138169");
 // 09305138169
+
+formatIranPhone("+989305138169", { digits: "fa" });
+// ۰۹۳۰۵۱۳۸۱۶۹
 
 formatIranPhone("09305138169", { target: "db" });
 // +989305138169
 ```
+
+## API
+
+- formatFaDate(value, options?)
+- formatFaNumber(value)
+- formatFaCurrency(value, currency?, options?)
+- toPersianDigits(value)
+- toEnglishDigits(value)
+- formatIranPhone(value, options?)
+
+## Internal Structure
+
+Source is organized by domain for long-term maintainability:
+
+- src/date
+- src/digits
+- src/number
+- src/phone
+- src/types
